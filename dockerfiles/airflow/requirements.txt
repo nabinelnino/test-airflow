@@ -1,0 +1,13 @@
+apache-airflow-providers-common-io
+apache-airflow-providers-google
+airflow-provider-mlflow
+mlflow-skinny
+scikit-learn
+lightgbm
+rdkit
+numpy
+tqdm
+xgboost
+imblearn
+feature-engine
+loguru
