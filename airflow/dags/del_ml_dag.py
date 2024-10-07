@@ -1,6 +1,4 @@
-
 from dotenv import load_dotenv
-
 from airflow.decorators import task, dag
 from mlflow_provider.operators.registry import CreateRegisteredModelOperator
 from sklearn.metrics import roc_auc_score, average_precision_score
@@ -14,13 +12,21 @@ from mlflow_provider.hooks.client import MLflowClientHook
 import os
 import mlflow
 import sys
-sys.path.append("/var/airflow/")
+sys.path.append("/opt/airflow/")
 from src.utils.metrics import early_enrichment, diverse_early_enrichment
 from src.utils.model import AirCheckModel
 from src.utils.logger import setup_logger
 from src.utils.aircheck_io import read_aircheck_file
 
-load_dotenv(dotenv_path='/var/airflow/.env')
+mlflow_enable_system_metrics = os.getenv('MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING', 'false').lower() == 'true'
+
+
+os.environ["MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING"] = "true"
+
+
+
+
+load_dotenv(dotenv_path='/opt/airflow/.env')
 MLFLOW_CONN_ID = os.getenv("MLFLOW_CONN_ID", "mlflow_default_new")
 GCP_CONN_ID = os.getenv("GCP_CONN_ID", "google_cloud_default")
 MAX_RESULTS_MLFLOW_LIST_EXPERIMENTS = int(
@@ -80,6 +86,7 @@ def create_new_del_model():
     def load_dataset(input_file: str):
         """Load dataset from the input file."""
         print("Columns---", FPS)
+        print("connection id----", MLFLOW_CONN_ID)
         dataset = read_aircheck_file(
             input_file, company=COMPANY, fps=FPS, file_format=INPUT_FILE_FORMAT)[0]
 
@@ -118,7 +125,9 @@ def create_new_del_model():
         Returns accuracy score via XCom to GCS bucket.
         """
 
-        mlflow.set_tracking_uri('http://host.docker.internal:5001')
+        # mlflow.set_tracking_uri('http://34.139.49.139:5000/')
+        os.environ["MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING"] = "true"
+        mlflow.set_tracking_uri('http://34.139.49.139:5000/')
         mlflow.sklearn.autolog()
         mlflow.lightgbm.autolog()
 
@@ -183,6 +192,7 @@ def create_new_del_model():
             {"key": "model_type", "value": "regression"},
             {"key": "data", "value": "dna_encoded"},
         ],
+        mlflow_conn_id=MLFLOW_CONN_ID,
     )
 
     dataset = load_dataset(INPUT_FILE)
